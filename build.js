@@ -11,7 +11,8 @@ const path = require('path');
 const fs = require('fs');
 
 console.log('🔨 Starting build process...');
-console.log('📦 Installing backend dependencies...');
+console.log('📦 Step 1: Root dependencies should already be installed');
+console.log('📦 Step 2: Installing backend dependencies...');
 
 const backendPath = path.join(__dirname, 'backend');
 const packageJsonPath = path.join(backendPath, 'package.json');

@@ -3,7 +3,7 @@ services:
     name: video-editing-store-backend
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV

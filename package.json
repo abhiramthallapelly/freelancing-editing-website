@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build.js",
     "start": "node backend/server.js",
-    "postinstall": "node install-backend.js",
+    "postinstall": "node install-backend.js || echo 'Postinstall warning: Backend deps may need manual install'",
+    "install:all": "npm install && node install-backend.js",
     "serve": "http-server -p 3000 -o"
   },
   "engines": {
