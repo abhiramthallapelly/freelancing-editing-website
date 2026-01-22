@@ -33,7 +33,9 @@ const Category = require('./models/Category');
 
 const app = express();
 // Force the server to always use port 5050 for debugging
-const PORT = 5050;
+
+const PORT = process.env.PORT || 5050;
+//const PORT = 5050;
 
 // Log a warning if NODE_ENV is not set
 if (!process.env.NODE_ENV) {
