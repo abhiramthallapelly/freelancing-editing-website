@@ -15,9 +15,6 @@ function initEmailTransporter() {
         pass: process.env.EMAIL_PASS
       }
     });
-    console.log('Email transporter initialized');
-  } else {
-    console.warn('Email not configured. Set EMAIL_USER and EMAIL_PASS in environment variables.');
   }
 }
 
@@ -28,7 +25,6 @@ async function sendEmail(to = 'abhiramthallapelli95@gmail.com', subject, html, t
   }
 
   if (!transporter) {
-    console.warn('Email transporter not available. Email not sent.');
     return false;
   }
 
@@ -41,13 +37,11 @@ async function sendEmail(to = 'abhiramthallapelli95@gmail.com', subject, html, t
       html
     });
     const logLine = `[${new Date().toISOString()}] Email sent to ${to} subject="${subject}" messageId=${info.messageId}\n`;
-    try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), logLine); } catch (e) { console.warn('Failed to write email log:', e); }
-    console.log('Email sent:', info.messageId);
+    try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), logLine); } catch (e) { }
     return true;
   } catch (error) {
     const errLine = `[${new Date().toISOString()}] Error sending email to ${to} subject="${subject}" error=${error && (error.message || error)}\n`;
-    try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), errLine); } catch (e) { console.warn('Failed to write email log:', e); }
-    console.error('Error sending email:', error);
+    try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), errLine); } catch (e) { }
     return false;
   }
 }

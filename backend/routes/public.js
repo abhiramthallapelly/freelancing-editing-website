@@ -3,7 +3,6 @@ const db = require('../config/db');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
-console.log('STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const { validateContact, validateReview } = require('../middleware/validator');
@@ -263,7 +262,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), (req, res) =>
   // Handle successful payment
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    console.log('Payment received for session:', session.id, 'project:', session.metadata.project_id);
   }
   res.json({ received: true });
 });

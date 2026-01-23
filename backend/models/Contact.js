@@ -30,8 +30,5 @@ const contactSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-contactSchema.index({ is_read: 1 });
-contactSchema.index({ created_at: -1 });
-
 module.exports = mongoose.model('Contact', contactSchema);
 

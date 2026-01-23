@@ -37,25 +37,19 @@ function post(path, data) {
 
 (async () => {
   try {
-    console.log('\n== REGISTER ==');
     const reg = await post('/api/auth/register', { username: 'testuser_ci', email: 'testuser_ci@example.com', password: 'secret123', fullName: 'CI Tester' });
-    console.log(reg);
   } catch (e) {
     console.error('Register error:', e.message || e);
   }
 
   try {
-    console.log('\n== LOGIN ==');
     const login = await post('/api/auth/login', { username: 'testuser_ci', password: 'secret123' });
-    console.log(login);
   } catch (e) {
     console.error('Login error:', e.message || e);
   }
 
   try {
-    console.log('\n== CONTACT ==');
     const contact = await post('/api/public/contact', { name: 'CI Tester', email: 'ci-tester@example.com', message: 'Automated contact test from script.', subject: 'CI Test' });
-    console.log(contact);
   } catch (e) {
     console.error('Contact error:', e.message || e);
   }

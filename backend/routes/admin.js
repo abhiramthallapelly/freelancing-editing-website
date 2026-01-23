@@ -7,6 +7,7 @@ const path = require('path');
 const verifyAdmin = require('../middleware/auth');
 const { uploadLimiter } = require('../middleware/rateLimiter');
 const { validateProjectUpload } = require('../middleware/validator');
+const Admin = require('../models/Admin');
 
 const router = express.Router();
 
@@ -29,12 +30,13 @@ router.post('/register', async (req, res) => {
 });
 
 // Login admin
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ message: 'Username and password required.' });
   }
-  db.get('SELECT * FROM admin WHERE username = ?', [username], async (err, user) => {
+  try {
+    const user = await Admin.findOne({ username });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials.' });
     }
@@ -44,7 +46,10 @@ router.post('/login', (req, res) => {
     }
     const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET || 'secret', { expiresIn: '2h' });
     res.json({ token });
-  });
+  } catch (error) {
+    console.error('Error during admin login:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
 });
 
 // Multer setup for file uploads with multiple files
@@ -70,28 +75,13 @@ router.post('/projects', verifyAdmin, uploadLimiter, validateProjectUpload, uplo
   { name: 'file', maxCount: 1 },
   { name: 'image', maxCount: 1 }
 ]), (req, res) => {
-  console.log('Upload request received:', {
-    body: req.body,
-    files: req.files ? Object.keys(req.files) : 'No files'
-  });
-  
   const { title, description, is_free, price } = req.body;
   if (!title || !req.files.file) {
-    console.log('Validation failed:', { title: !!title, file: !!req.files.file });
     return res.status(400).json({ message: 'Title and file are required.' });
   }
   
   const filePath = req.files.file[0].filename;
   const imagePath = req.files.image ? req.files.image[0].filename : null;
-  
-  console.log('About to insert into database:', {
-    title,
-    description: description || '',
-    filePath,
-    imagePath,
-    is_free: is_free === '0' ? 0 : 1,
-    price: price || 0
-  });
   
   db.run(
     'INSERT INTO projects (title, description, file_path, image_path, is_free, price) VALUES (?, ?, ?, ?, ?, ?)',
@@ -101,7 +91,6 @@ router.post('/projects', verifyAdmin, uploadLimiter, validateProjectUpload, uplo
         console.error('Database error:', err);
         return res.status(500).json({ message: 'Error saving project.', error: err.message });
       }
-      console.log('Project saved successfully with ID:', this.lastID);
       res.json({ id: this.lastID, message: 'Project uploaded successfully.' });
     }
   );
@@ -147,4 +136,4 @@ router.delete('/projects/:id', verifyAdmin, (req, res) => {
   });
 });
 
-module.exports = router; 
+module.exports = router;

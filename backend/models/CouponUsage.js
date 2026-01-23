@@ -26,11 +26,5 @@ const couponUsageSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
-couponUsageSchema.index({ coupon_id: 1 });
-couponUsageSchema.index({ user_id: 1 });
-couponUsageSchema.index({ purchase_id: 1 });
-couponUsageSchema.index({ created_at: -1 });
-
 module.exports = mongoose.model('CouponUsage', couponUsageSchema);
 

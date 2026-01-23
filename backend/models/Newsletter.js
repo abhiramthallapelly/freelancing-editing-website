@@ -25,8 +25,5 @@ const newsletterSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-newsletterSchema.index({ email: 1 });
-newsletterSchema.index({ is_active: 1 });
-
 module.exports = mongoose.model('Newsletter', newsletterSchema);
 

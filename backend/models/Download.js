@@ -28,10 +28,5 @@ const downloadSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
-downloadSchema.index({ user_id: 1 });
-downloadSchema.index({ project_id: 1 });
-downloadSchema.index({ created_at: -1 });
-
 module.exports = mongoose.model('Download', downloadSchema);
 

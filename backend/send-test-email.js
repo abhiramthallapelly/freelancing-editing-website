@@ -5,9 +5,7 @@ const { sendEmail } = require('./utils/email');
 (async () => {
   try {
     const to = process.env.EMAIL_USER;
-    console.log('Sending test email to', to);
-    const ok = await sendEmail(to, 'VideoStore Backend Test Email', '<p>This is a test email from VideoStore backend.</p>');
-    console.log('sendEmail returned', ok);
+    await sendEmail(to, 'VideoStore Backend Test Email', '<p>This is a test email from VideoStore backend.</p>');
   } catch (err) {
     console.error('Test send error:', err);
   }
