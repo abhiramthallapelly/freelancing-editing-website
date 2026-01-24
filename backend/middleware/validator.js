@@ -103,8 +103,8 @@ const validateReview = [
 const validateContact = [
   body('name')
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Name must be between 2 and 100 characters'),
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Name is required and must be less than 100 characters'),
   body('email')
     .trim()
     .isEmail()
@@ -112,8 +112,8 @@ const validateContact = [
     .normalizeEmail(),
   body('message')
     .trim()
-    .isLength({ min: 10, max: 2000 })
-    .withMessage('Message must be between 10 and 2000 characters'),
+    .isLength({ min: 1, max: 5000 })
+    .withMessage('Message is required'),
   body('subject')
     .optional()
     .trim()
