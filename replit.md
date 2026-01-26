@@ -43,7 +43,20 @@ A video editing services website with a store for templates, project files, font
 - `/api/admin/*` - Admin operations
 - `/api/public/*` - Public content
 
+### OTP Verification Endpoints
+- `POST /api/auth/send-otp` - Send 6-digit OTP code to email (types: signup, login, password_reset)
+- `POST /api/auth/verify-otp` - Verify OTP code
+- `POST /api/auth/register-with-otp` - Register with email verification
+- `POST /api/auth/login-with-otp` - Login using OTP instead of password
+
 ## Recent Changes
+- 2026-01-26: Added email OTP verification system
+  - New OTP model for storing verification codes
+  - OTP codes are 6-digit numbers, valid for 10 minutes
+  - Rate limiting: max 3 OTP requests per email per 10 minutes
+  - Max 5 verification attempts per OTP code
+  - Supports signup, login, and password reset flows
+  - Store/reviews endpoints return empty arrays when MongoDB unavailable
 - 2026-01-24: Converted all routes to use MongoDB
   - Fixed download routes (free and paid) to use Project model
   - Fixed contact form to use Contact model + sends email notifications
@@ -55,5 +68,6 @@ A video editing services website with a store for templates, project files, font
   - Added cache control headers for development
 
 ## Known Issues
-- MongoDB connection string needs to be corrected (current URI contains invalid characters)
+- MongoDB connection string needs to be corrected (current URI contains "200525>" corruption)
 - Correct format: `mongodb+srv://username:password@cluster17.jbpc0qx.mongodb.net/database-name`
+- OTP verification requires working MongoDB connection to function
