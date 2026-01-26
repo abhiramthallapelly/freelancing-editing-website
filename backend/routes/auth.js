@@ -2,20 +2,18 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const User = require('../models/User');
-const OTP = require('../models/OTP');
+const User = require('../models-pg/User');
+const OTP = require('../models-pg/OTP');
 const { OAuth2Client } = require('google-auth-library');
 const { validateRegister, validateLogin } = require('../middleware/validator');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { sendEmail } = require('../utils/email');
 const router = express.Router();
 
-// Generate 6-digit OTP
 const generateOTP = () => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
-// Send OTP email
 const sendOTPEmail = async (email, otp, type) => {
   const subject = type === 'signup' 
     ? 'Verify Your Email - ABHIRAM CREATIONS' 
@@ -55,7 +53,6 @@ const sendOTPEmail = async (email, otp, type) => {
   return await sendEmail(email, subject, html);
 };
 
-// Initialize Google OAuth Client (only if credentials are provided)
 let googleClient = null;
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   googleClient = new OAuth2Client(
@@ -68,39 +65,28 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   console.warn('Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable Google Sign-In.');
 }
 
-// User Registration
 router.post('/register', validateRegister, async (req, res) => {
   try {
     const { username, email, password, fullName } = req.body;
 
-    // Validation
     if (!username || !email || !password || !fullName) {
-      return res.status(400).json({ 
-        message: 'All fields are required' 
-      });
+      return res.status(400).json({ message: 'All fields are required' });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ 
-        message: 'Password must be at least 6 characters long' 
-      });
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ 
       $or: [{ username }, { email: email.toLowerCase() }] 
     });
 
     if (existingUser) {
-      return res.status(400).json({ 
-        message: 'Username or email already exists' 
-      });
+      return res.status(400).json({ message: 'Username or email already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
     const user = await User.create({
       username,
       email: email.toLowerCase(),
@@ -109,14 +95,12 @@ router.post('/register', validateRegister, async (req, res) => {
       auth_provider: 'local'
     });
 
-    // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id.toString(), username, email: user.email },
+      { userId: user.id.toString(), username, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
 
-    // Send welcome email
     const { sendWelcomeEmail } = require('../utils/email');
     sendWelcomeEmail(user.email, fullName || username).catch(err => {
       console.error('Error sending welcome email:', err);
@@ -126,7 +110,7 @@ router.post('/register', validateRegister, async (req, res) => {
       message: 'User registered successfully',
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         username: user.username,
         email: user.email,
         fullName: user.full_name
@@ -135,60 +119,42 @@ router.post('/register', validateRegister, async (req, res) => {
 
   } catch (error) {
     console.error('Registration error:', error);
-    if (error.code === 11000) { // MongoDB duplicate key error
-      return res.status(400).json({ 
-        message: 'Username or email already exists' 
-      });
+    if (error.code === '23505') {
+      return res.status(400).json({ message: 'Username or email already exists' });
     }
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// User Login
 router.post('/login', validateLogin, async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Validation
     if (!username || !password) {
-      return res.status(400).json({ 
-        message: 'Username and password are required' 
-      });
+      return res.status(400).json({ message: 'Username and password are required' });
     }
 
-    // Find user
     const user = await User.findOne({ 
       $or: [{ username }, { email: username.toLowerCase() }] 
     });
 
     if (!user) {
-      return res.status(401).json({ 
-        message: 'Invalid credentials' 
-      });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Check if user has a password (OAuth users might not)
     if (!user.password) {
-      return res.status(401).json({ 
-        message: 'Please sign in with your social account' 
-      });
+      return res.status(401).json({ message: 'Please sign in with your social account' });
     }
 
-    // Check password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ 
-        message: 'Invalid credentials' 
-      });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
-    user.last_login = new Date();
-    await user.save();
+    await User.updateLastLogin(user.id);
 
-    // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id.toString(), username: user.username, email: user.email },
+      { userId: user.id.toString(), username: user.username, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
@@ -197,7 +163,7 @@ router.post('/login', validateLogin, async (req, res) => {
       message: 'Login successful',
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         username: user.username,
         email: user.email,
         fullName: user.full_name
@@ -210,12 +176,9 @@ router.post('/login', validateLogin, async (req, res) => {
   }
 });
 
-// Get current user profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId)
-      .select('username email full_name createdAt')
-      .lean();
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -223,11 +186,11 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
     res.json({ 
       user: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         username: user.username,
         email: user.email,
         full_name: user.full_name,
-        created_at: user.createdAt
+        created_at: user.created_at
       }
     });
   } catch (error) {
@@ -236,21 +199,17 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
-// Update user profile
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const { fullName, email } = req.body;
 
     if (!fullName || !email) {
-      return res.status(400).json({ 
-        message: 'Full name and email are required' 
-      });
+      return res.status(400).json({ message: 'Full name and email are required' });
     }
 
     const user = await User.findByIdAndUpdate(
       req.user.userId,
-      { full_name: fullName, email: email.toLowerCase() },
-      { new: true, runValidators: true }
+      { full_name: fullName, email: email.toLowerCase() }
     );
 
     if (!user) {
@@ -260,31 +219,25 @@ router.put('/profile', authenticateToken, async (req, res) => {
     res.json({ message: 'Profile updated successfully' });
   } catch (error) {
     console.error('Profile update error:', error);
-    if (error.code === 11000) {
+    if (error.code === '23505') {
       return res.status(400).json({ message: 'Email already in use' });
     }
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Change password
 router.put('/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
-        message: 'Current and new password are required' 
-      });
+      return res.status(400).json({ message: 'Current and new password are required' });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        message: 'New password must be at least 6 characters long' 
-      });
+      return res.status(400).json({ message: 'New password must be at least 6 characters long' });
     }
 
-    // Get current user
     const user = await User.findById(req.user.userId);
 
     if (!user) {
@@ -292,25 +245,16 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     }
 
     if (!user.password) {
-      return res.status(400).json({ 
-        message: 'OAuth users cannot change password. Please use your social account to sign in.' 
-      });
+      return res.status(400).json({ message: 'OAuth users cannot change password. Please use your social account to sign in.' });
     }
 
-    // Verify current password
     const isValidPassword = await bcrypt.compare(currentPassword, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ 
-        message: 'Current password is incorrect' 
-      });
+      return res.status(401).json({ message: 'Current password is incorrect' });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-
-    // Update password
-    user.password = hashedPassword;
-    await user.save();
+    await User.findByIdAndUpdate(user.id, { password: hashedPassword });
 
     res.json({ message: 'Password changed successfully' });
 
@@ -320,7 +264,6 @@ router.put('/change-password', authenticateToken, async (req, res) => {
   }
 });
 
-// Google OAuth - Get authentication URL
 router.get('/google', (req, res) => {
   try {
     if (!googleClient || !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
@@ -342,22 +285,13 @@ router.get('/google', (req, res) => {
       prompt: 'consent'
     });
 
-    res.json({ 
-      success: true,
-      authUrl,
-      configured: true
-    });
+    res.json({ success: true, authUrl, configured: true });
   } catch (error) {
     console.error('Google OAuth URL generation error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error generating Google OAuth URL',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error generating Google OAuth URL', error: error.message });
   }
 });
 
-// Check Google OAuth configuration status
 router.get('/google/status', (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -381,7 +315,6 @@ router.get('/google/status', (req, res) => {
   });
 });
 
-// Google OAuth - Callback handler
 router.get('/google/callback', async (req, res) => {
   try {
     if (!googleClient || !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
@@ -394,7 +327,6 @@ router.get('/google/callback', async (req, res) => {
       return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/store.html?error=oauth_failed`);
     }
 
-    // Exchange code for tokens
     let tokens;
     try {
       const tokenResponse = await googleClient.getToken(code);
@@ -408,7 +340,6 @@ router.get('/google/callback', async (req, res) => {
       return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/store.html?error=oauth_token_exchange_failed`);
     }
 
-    // Get user info from Google using ID token
     if (!tokens.id_token) {
       return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/store.html?error=oauth_failed`);
     }
@@ -428,39 +359,30 @@ router.get('/google/callback', async (req, res) => {
       return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/store.html?error=no_email`);
     }
 
-    // Check if user exists
     let existingUser = await User.findOne({ 
       $or: [{ email }, { google_id: googleId }] 
     });
 
     if (existingUser) {
-      // Update existing user with Google info if needed
       if (!existingUser.google_id) {
-        existingUser.google_id = googleId;
-        existingUser.auth_provider = 'google';
-        if (profilePicture) existingUser.profile_picture = profilePicture;
-        await existingUser.save();
-      } else if (profilePicture && !existingUser.profile_picture) {
-        existingUser.profile_picture = profilePicture;
-        await existingUser.save();
+        await User.findByIdAndUpdate(existingUser.id, {
+          google_id: googleId,
+          auth_provider: 'google',
+          profile_picture: profilePicture || existingUser.profile_picture
+        });
       }
       
-      // Update last login
-      existingUser.last_login = new Date();
-      await existingUser.save();
+      await User.updateLastLogin(existingUser.id);
       
-      // Generate JWT token for existing user
       const token = jwt.sign(
-        { userId: existingUser._id.toString(), email: existingUser.email, authProvider: 'google' },
+        { userId: existingUser.id.toString(), email: existingUser.email, authProvider: 'google' },
         process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '7d' }
       );
 
-      // Redirect to frontend with token
       return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/store.html?token=${token}&email=${encodeURIComponent(existingUser.email)}&name=${encodeURIComponent(existingUser.full_name || existingUser.username || existingUser.email)}`);
     } else {
-      // Create new user
-      const username = email.split('@')[0]; // Use email prefix as username
+      const username = email.split('@')[0];
       const newUser = await User.create({
         email,
         username,
@@ -468,18 +390,17 @@ router.get('/google/callback', async (req, res) => {
         auth_provider: 'google',
         google_id: googleId,
         profile_picture: profilePicture || null,
-        is_verified: true,
-        last_login: new Date()
+        is_verified: true
       });
       
-      // Generate JWT token
+      await User.updateLastLogin(newUser.id);
+      
       const token = jwt.sign(
-        { userId: newUser._id.toString(), email, authProvider: 'google' },
+        { userId: newUser.id.toString(), email, authProvider: 'google' },
         process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '7d' }
       );
 
-      // Redirect to frontend with token
       return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/store.html?token=${token}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(fullName || username)}`);
     }
 
@@ -489,7 +410,6 @@ router.get('/google/callback', async (req, res) => {
   }
 });
 
-// Middleware to authenticate JWT token
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -507,7 +427,6 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Send OTP for email verification
 router.post('/send-otp', async (req, res) => {
   try {
     const { email, type } = req.body;
@@ -519,26 +438,20 @@ router.post('/send-otp', async (req, res) => {
     const validTypes = ['signup', 'login', 'password_reset'];
     const otpType = validTypes.includes(type) ? type : 'signup';
     
-    // Check rate limit - max 3 OTPs per email per 10 minutes
     const recentOTPs = await OTP.countDocuments({
       email: email.toLowerCase(),
-      createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) }
+      created_at: { $gte: new Date(Date.now() - 10 * 60 * 1000) }
     });
     
     if (recentOTPs >= 3) {
-      return res.status(429).json({ 
-        message: 'Too many OTP requests. Please wait 10 minutes before trying again.' 
-      });
+      return res.status(429).json({ message: 'Too many OTP requests. Please wait 10 minutes before trying again.' });
     }
     
-    // Generate OTP
     const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     
-    // Delete any existing OTPs for this email and type
     await OTP.deleteMany({ email: email.toLowerCase(), type: otpType });
     
-    // Save new OTP
     await OTP.create({
       email: email.toLowerCase(),
       otp,
@@ -546,17 +459,13 @@ router.post('/send-otp', async (req, res) => {
       expiresAt
     });
     
-    // Send OTP email
     const emailSent = await sendOTPEmail(email, otp, otpType);
     
     if (!emailSent) {
       return res.status(500).json({ message: 'Failed to send verification email' });
     }
     
-    res.json({ 
-      message: 'Verification code sent to your email',
-      email: email.toLowerCase()
-    });
+    res.json({ message: 'Verification code sent to your email', email: email.toLowerCase() });
     
   } catch (error) {
     console.error('Send OTP error:', error);
@@ -564,7 +473,6 @@ router.post('/send-otp', async (req, res) => {
   }
 });
 
-// Verify OTP
 router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp, type } = req.body;
@@ -575,38 +483,31 @@ router.post('/verify-otp', async (req, res) => {
     
     const otpType = type || 'signup';
     
-    // Find the OTP record
     const otpRecord = await OTP.findOne({
       email: email.toLowerCase(),
       type: otpType,
-      expiresAt: { $gt: new Date() }
+      expires_at: { $gt: new Date() }
     });
     
     if (!otpRecord) {
       return res.status(400).json({ message: 'Verification code expired or not found. Please request a new code.' });
     }
     
-    // Check max attempts
     if (otpRecord.attempts >= 5) {
-      await OTP.deleteOne({ _id: otpRecord._id });
+      await OTP.deleteOne({ id: otpRecord.id });
       return res.status(400).json({ message: 'Too many failed attempts. Please request a new code.' });
     }
     
-    // Verify OTP
     if (otpRecord.otp !== otp) {
       otpRecord.attempts += 1;
-      await otpRecord.save();
+      await OTP.save(otpRecord);
       return res.status(400).json({ message: 'Invalid verification code' });
     }
     
-    // Mark as verified
     otpRecord.verified = true;
-    await otpRecord.save();
+    await OTP.save(otpRecord);
     
-    res.json({ 
-      message: 'Email verified successfully',
-      verified: true 
-    });
+    res.json({ message: 'Email verified successfully', verified: true });
     
   } catch (error) {
     console.error('Verify OTP error:', error);
@@ -614,7 +515,6 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// Register with OTP verification
 router.post('/register-with-otp', validateRegister, async (req, res) => {
   try {
     const { username, email, password, fullName, otp } = req.body;
@@ -623,19 +523,17 @@ router.post('/register-with-otp', validateRegister, async (req, res) => {
       return res.status(400).json({ message: 'Verification code is required' });
     }
 
-    // Verify OTP first
     const otpRecord = await OTP.findOne({
       email: email.toLowerCase(),
       type: 'signup',
       verified: true,
-      expiresAt: { $gt: new Date() }
+      expires_at: { $gt: new Date() }
     });
 
     if (!otpRecord) {
       return res.status(400).json({ message: 'Please verify your email first' });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ 
       $or: [{ username }, { email: email.toLowerCase() }] 
     });
@@ -644,30 +542,25 @@ router.post('/register-with-otp', validateRegister, async (req, res) => {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user with verified email
     const user = await User.create({
       username,
       email: email.toLowerCase(),
       password: hashedPassword,
       full_name: fullName,
       auth_provider: 'local',
-      email_verified: true
+      is_verified: true
     });
 
-    // Delete used OTP
-    await OTP.deleteOne({ _id: otpRecord._id });
+    await OTP.deleteOne({ id: otpRecord.id });
 
-    // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id.toString(), username, email: user.email },
+      { userId: user.id.toString(), username, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
 
-    // Send welcome email
     const { sendWelcomeEmail } = require('../utils/email');
     sendWelcomeEmail(user.email, fullName || username).catch(err => {
       console.error('Error sending welcome email:', err);
@@ -677,7 +570,7 @@ router.post('/register-with-otp', validateRegister, async (req, res) => {
       message: 'Registration successful',
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         username: user.username,
         email: user.email,
         fullName: user.full_name
@@ -690,7 +583,6 @@ router.post('/register-with-otp', validateRegister, async (req, res) => {
   }
 });
 
-// Login with OTP verification
 router.post('/login-with-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -699,11 +591,10 @@ router.post('/login-with-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email and verification code are required' });
     }
 
-    // Verify OTP
     const otpRecord = await OTP.findOne({
       email: email.toLowerCase(),
       type: 'login',
-      expiresAt: { $gt: new Date() }
+      expires_at: { $gt: new Date() }
     });
 
     if (!otpRecord) {
@@ -711,33 +602,33 @@ router.post('/login-with-otp', async (req, res) => {
     }
 
     if (otpRecord.attempts >= 5) {
-      await OTP.deleteOne({ _id: otpRecord._id });
+      await OTP.deleteOne({ id: otpRecord.id });
       return res.status(400).json({ message: 'Too many failed attempts. Please request a new code.' });
     }
 
     if (otpRecord.otp !== otp) {
       otpRecord.attempts += 1;
-      await otpRecord.save();
+      await OTP.save(otpRecord);
       return res.status(400).json({ message: 'Invalid verification code' });
     }
 
-    // Find user
-    const user = await User.findOne({ email: email.toLowerCase() });
+    let user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+      const username = email.split('@')[0];
+      user = await User.create({
+        email: email.toLowerCase(),
+        username,
+        auth_provider: 'local',
+        is_verified: true
+      });
     }
 
-    // Delete used OTP
-    await OTP.deleteOne({ _id: otpRecord._id });
+    await OTP.deleteOne({ id: otpRecord.id });
+    await User.updateLastLogin(user.id);
 
-    // Update last login
-    user.last_login = new Date();
-    await user.save();
-
-    // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id.toString(), username: user.username, email: user.email },
+      { userId: user.id.toString(), email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
@@ -746,7 +637,7 @@ router.post('/login-with-otp', async (req, res) => {
       message: 'Login successful',
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         username: user.username,
         email: user.email,
         fullName: user.full_name
@@ -757,6 +648,40 @@ router.post('/login-with-otp', async (req, res) => {
     console.error('Login with OTP error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+router.get('/status', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.json({ authenticated: false, message: 'No token provided' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', async (err, decoded) => {
+    if (err) {
+      return res.json({ authenticated: false, message: 'Invalid or expired token' });
+    }
+
+    try {
+      const user = await User.findById(decoded.userId);
+      if (!user) {
+        return res.json({ authenticated: false, message: 'User not found' });
+      }
+
+      res.json({
+        authenticated: true,
+        user: {
+          id: user.id.toString(),
+          username: user.username,
+          email: user.email,
+          fullName: user.full_name
+        }
+      });
+    } catch (error) {
+      res.json({ authenticated: false, message: 'Error verifying user' });
+    }
+  });
 });
 
 module.exports = router;
