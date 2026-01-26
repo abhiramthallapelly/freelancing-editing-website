@@ -33,6 +33,9 @@ const couponUsageRoutes = require('./routes/couponUsage');
 
 const app = express();
 
+// Trust proxy for Replit environment (needed for rate limiting and secure cookies)
+app.set('trust proxy', 1);
+
 /**
  * 🔑 Default development port. Use 5000 for Replit.
  * ❌ Never hardcode ports in production; use env vars for deployments.
