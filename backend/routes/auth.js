@@ -1,11 +1,59 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
+const OTP = require('../models/OTP');
 const { OAuth2Client } = require('google-auth-library');
 const { validateRegister, validateLogin } = require('../middleware/validator');
 const { authLimiter } = require('../middleware/rateLimiter');
+const { sendEmail } = require('../utils/email');
 const router = express.Router();
+
+// Generate 6-digit OTP
+const generateOTP = () => {
+  return crypto.randomInt(100000, 999999).toString();
+};
+
+// Send OTP email
+const sendOTPEmail = async (email, otp, type) => {
+  const subject = type === 'signup' 
+    ? 'Verify Your Email - ABHIRAM CREATIONS' 
+    : 'Login Verification Code - ABHIRAM CREATIONS';
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #00bfa6; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9f9f9; }
+        .otp-box { background: #00bfa6; color: white; font-size: 32px; font-weight: bold; padding: 20px; text-align: center; letter-spacing: 8px; border-radius: 10px; margin: 20px 0; }
+        .warning { color: #e74c3c; font-size: 12px; margin-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>ABHIRAM CREATIONS</h1>
+        </div>
+        <div class="content">
+          <p>Hello,</p>
+          <p>${type === 'signup' ? 'Thank you for signing up! Please use the verification code below to complete your registration:' : 'Use the verification code below to complete your login:'}</p>
+          <div class="otp-box">${otp}</div>
+          <p>This code will expire in <strong>10 minutes</strong>.</p>
+          <p class="warning">If you did not request this code, please ignore this email.</p>
+          <p>Best regards,<br>ABHIRAM CREATIONS Team</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  return await sendEmail(email, subject, html);
+};
 
 // Initialize Google OAuth Client (only if credentials are provided)
 let googleClient = null;
@@ -458,5 +506,257 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+
+// Send OTP for email verification
+router.post('/send-otp', async (req, res) => {
+  try {
+    const { email, type } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    const validTypes = ['signup', 'login', 'password_reset'];
+    const otpType = validTypes.includes(type) ? type : 'signup';
+    
+    // Check rate limit - max 3 OTPs per email per 10 minutes
+    const recentOTPs = await OTP.countDocuments({
+      email: email.toLowerCase(),
+      createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) }
+    });
+    
+    if (recentOTPs >= 3) {
+      return res.status(429).json({ 
+        message: 'Too many OTP requests. Please wait 10 minutes before trying again.' 
+      });
+    }
+    
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    // Delete any existing OTPs for this email and type
+    await OTP.deleteMany({ email: email.toLowerCase(), type: otpType });
+    
+    // Save new OTP
+    await OTP.create({
+      email: email.toLowerCase(),
+      otp,
+      type: otpType,
+      expiresAt
+    });
+    
+    // Send OTP email
+    const emailSent = await sendOTPEmail(email, otp, otpType);
+    
+    if (!emailSent) {
+      return res.status(500).json({ message: 'Failed to send verification email' });
+    }
+    
+    res.json({ 
+      message: 'Verification code sent to your email',
+      email: email.toLowerCase()
+    });
+    
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ message: 'Failed to send verification code' });
+  }
+});
+
+// Verify OTP
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp, type } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and verification code are required' });
+    }
+    
+    const otpType = type || 'signup';
+    
+    // Find the OTP record
+    const otpRecord = await OTP.findOne({
+      email: email.toLowerCase(),
+      type: otpType,
+      expiresAt: { $gt: new Date() }
+    });
+    
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'Verification code expired or not found. Please request a new code.' });
+    }
+    
+    // Check max attempts
+    if (otpRecord.attempts >= 5) {
+      await OTP.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ message: 'Too many failed attempts. Please request a new code.' });
+    }
+    
+    // Verify OTP
+    if (otpRecord.otp !== otp) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+    
+    // Mark as verified
+    otpRecord.verified = true;
+    await otpRecord.save();
+    
+    res.json({ 
+      message: 'Email verified successfully',
+      verified: true 
+    });
+    
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ message: 'Failed to verify code' });
+  }
+});
+
+// Register with OTP verification
+router.post('/register-with-otp', validateRegister, async (req, res) => {
+  try {
+    const { username, email, password, fullName, otp } = req.body;
+
+    if (!otp) {
+      return res.status(400).json({ message: 'Verification code is required' });
+    }
+
+    // Verify OTP first
+    const otpRecord = await OTP.findOne({
+      email: email.toLowerCase(),
+      type: 'signup',
+      verified: true,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'Please verify your email first' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ username }, { email: email.toLowerCase() }] 
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username or email already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user with verified email
+    const user = await User.create({
+      username,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      full_name: fullName,
+      auth_provider: 'local',
+      email_verified: true
+    });
+
+    // Delete used OTP
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id.toString(), username, email: user.email },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    // Send welcome email
+    const { sendWelcomeEmail } = require('../utils/email');
+    sendWelcomeEmail(user.email, fullName || username).catch(err => {
+      console.error('Error sending welcome email:', err);
+    });
+
+    res.status(201).json({
+      message: 'Registration successful',
+      token,
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        email: user.email,
+        fullName: user.full_name
+      }
+    });
+
+  } catch (error) {
+    console.error('Registration with OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Login with OTP verification
+router.post('/login-with-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and verification code are required' });
+    }
+
+    // Verify OTP
+    const otpRecord = await OTP.findOne({
+      email: email.toLowerCase(),
+      type: 'login',
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'Verification code expired. Please request a new code.' });
+    }
+
+    if (otpRecord.attempts >= 5) {
+      await OTP.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ message: 'Too many failed attempts. Please request a new code.' });
+    }
+
+    if (otpRecord.otp !== otp) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    // Delete used OTP
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    // Update last login
+    user.last_login = new Date();
+    await user.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id.toString(), username: user.username, email: user.email },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        email: user.email,
+        fullName: user.full_name
+      }
+    });
+
+  } catch (error) {
+    console.error('Login with OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 module.exports = router;

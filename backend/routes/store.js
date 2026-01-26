@@ -86,12 +86,33 @@ router.get('/items', validateSearch, async (req, res) => {
     res.json(transformedItems);
   } catch (error) {
     console.error('Store items error:', error);
-    res.status(500).json({ message: 'Server error' });
+    // Return empty array instead of error when database is unavailable
+    res.json([]);
   }
 });
 
 // Get store categories
 router.get('/categories', async (req, res) => {
+  try {
+    const categories = await Category.find().sort({ name: 1 }).lean();
+    res.json(categories.map(cat => ({
+      ...cat,
+      id: cat._id.toString()
+    })));
+  } catch (error) {
+    console.error('Categories error:', error);
+    // Return default categories when database is unavailable
+    res.json([
+      { id: '1', name: 'template', icon: '📁', display_name: 'Templates' },
+      { id: '2', name: 'font', icon: '🔤', display_name: 'Fonts' },
+      { id: '3', name: 'effect', icon: '✨', display_name: 'Effects' },
+      { id: '4', name: 'graphic', icon: '🎨', display_name: 'Graphics' }
+    ]);
+  }
+});
+
+// Get store categories placeholder
+router.get('/categories-placeholder', async (req, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 }).lean();
     res.json(categories.map(cat => ({

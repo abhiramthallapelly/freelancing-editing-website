@@ -45,7 +45,8 @@ router.get('/projects', async (req, res) => {
     })));
   } catch (err) {
     console.error('Projects error:', err);
-    res.status(500).json({ message: 'Error fetching projects.' });
+    // Return empty array when database is unavailable
+    res.json([]);
   }
 });
 
@@ -72,7 +73,8 @@ router.get('/templates', async (req, res) => {
     })));
   } catch (err) {
     console.error('Templates error:', err);
-    res.status(500).json({ message: 'Error fetching templates.' });
+    // Return empty array when database is unavailable
+    res.json([]);
   }
 });
 
@@ -566,9 +568,8 @@ router.get('/reviews', async (req, res) => {
     res.json(formattedReviews);
   } catch (error) {
     console.error('Get reviews error:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch reviews.' 
-    });
+    // Return empty array when database is unavailable
+    res.json([]);
   }
 });
 
