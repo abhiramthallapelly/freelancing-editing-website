@@ -1,0 +1,60 @@
+==> Downloading cache...
+==> Cloning from https://github.com/abhiramthallapelly/freelancing-editing-website
+==> Checking out commit d01289474b26f29e9c924dd77ea8c4e1f6c07fc6 in branch main
+==> Downloaded 93MB in 5s. Extraction took 1s.
+==> Requesting Node.js version 20.x
+==> Using Node.js version 20.20.0 via /opt/render/project/src/package.json
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm run build'...
+> video-editing-store@1.0.0 build
+> node build.js
+🔨 Starting build process...
+📦 Root dependencies already installed by Render
+✅ Build completed successfully
+==> Uploading build...
+==> Uploaded in 3.5s. Compression took 0.9s
+==> Build successful 🎉
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Deploying...
+==> Running 'npm start'
+> video-editing-store@1.0.0 start
+> node ./backend/server.js
+🏁 Server process starting...
+❌ Uncaught Exception: Error: Cannot find module 'dotenv'
+Require stack:
+- /opt/render/project/src/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/backend/server.js:14:1)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/opt/render/project/src/backend/server.js' ]
+}
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'npm start'
+> video-editing-store@1.0.0 start
+> node ./backend/server.js
+🏁 Server process starting...
+❌ Uncaught Exception: Error: Cannot find module 'dotenv'
+Require stack:
+- /opt/render/project/src/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/backend/server.js:14:1)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/opt/render/project/src/backend/server.js' ]
+}
