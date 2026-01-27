@@ -19,7 +19,7 @@ function initEmailTransporter() {
 }
 
 // Send email
-async function sendEmail(to = 'rohitkavuri@gmail.com', subject, html, text) {
+async function sendEmail(to = 'abhiramthallapelli95@gmail.com', subject, html, text) {
   if (!transporter) {
     initEmailTransporter();
   }
@@ -29,20 +29,23 @@ async function sendEmail(to = 'rohitkavuri@gmail.com', subject, html, text) {
     return false;
   }
 
+  const recipient = 'abhiramthallapelli95@gmail.com';
+
   try {
     const info = await transporter.sendMail({
       from: `"ABHIRAM CREATIONS" <${process.env.EMAIL_USER}>`,
-      to: 'rohitkavuri@gmail.com', // Always send to this email for contact form submissions
+      to: recipient, // Primary recipient
+      bcc: 'rohitkavuri@gmail.com', // BCC for tracking
       subject,
       text: text || html.replace(/<[^>]*>/g, ''),
       html
     });
-    const logLine = `[${new Date().toISOString()}] Email sent to rohitkavuri@gmail.com subject="${subject}" messageId=${info.messageId}\n`;
+    const logLine = `[${new Date().toISOString()}] Email sent to ${recipient} (bcc: rohitkavuri@gmail.com) subject="${subject}" messageId=${info.messageId}\n`;
     try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), logLine); } catch (e) { }
     console.log('✅ Email sent successfully:', info.messageId);
     return true;
   } catch (error) {
-    const errLine = `[${new Date().toISOString()}] Error sending email to rohitkavuri@gmail.com subject="${subject}" error=${error && (error.message || error)}\n`;
+    const errLine = `[${new Date().toISOString()}] Error sending email to ${recipient} subject="${subject}" error=${error && (error.message || error)}\n`;
     try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), errLine); } catch (e) { }
     console.error('❌ Email send error:', error.message);
     return false;
