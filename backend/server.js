@@ -33,8 +33,8 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-const PORT = process.env.PORT || 5000;
-const HOST = '0.0.0.0';
+const PORT = parseInt(process.env.PORT, 10) || 5000;
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '0.0.0.0';
 
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -109,14 +109,26 @@ app.use(notFound);
 app.use(errorHandler);
 
 async function startServer() {
-  const server = app.listen(PORT, HOST, () => {
-    console.log(`🚀 Server LIVE on ${HOST}:${PORT}`);
-    initEmailTransporter();
-  });
+  try {
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server LIVE on 0.0.0.0:${PORT}`);
+      initEmailTransporter();
+    });
 
-  server.on('error', err => {
-    console.error('SERVER ERROR:', err.message);
-  });
+    server.on('error', err => {
+      console.error('SERVER ERROR:', err.message);
+      if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${PORT} is already in use. Retrying on another port...`);
+        setTimeout(() => {
+          server.close();
+          app.listen(0, '0.0.0.0');
+        }, 1000);
+      }
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
 
   try {
     await pool.query('SELECT 1');
