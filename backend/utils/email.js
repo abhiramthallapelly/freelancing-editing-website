@@ -25,7 +25,7 @@ async function sendEmail(to = 'abhiramthallapelli95@gmail.com', subject, html, t
   }
 
   if (!transporter) {
-    console.error('Email transporter not initialized. Check EMAIL_USER and EMAIL_PASS.');
+    console.error('❌ Email transporter not initialized. Check EMAIL_USER and EMAIL_PASS.');
     return false;
   }
 
@@ -40,14 +40,29 @@ async function sendEmail(to = 'abhiramthallapelli95@gmail.com', subject, html, t
       text: text || html.replace(/<[^>]*>/g, ''),
       html
     });
+    
+    console.log(`✅ Email sent successfully to ${recipient}. Message ID: ${info.messageId}`);
+    
     const logLine = `[${new Date().toISOString()}] Email sent to ${recipient} (bcc: rohitkavuri@gmail.com) subject="${subject}" messageId=${info.messageId}\n`;
-    try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), logLine); } catch (e) { }
-    console.log('✅ Email sent successfully:', info.messageId);
+    try { 
+      const logsDir = path.join(__dirname, '../logs');
+      if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+      fs.appendFileSync(path.join(logsDir, 'email.log'), logLine); 
+    } catch (e) { 
+      console.error('⚠️ Could not write to email.log:', e.message);
+    }
+    
     return true;
   } catch (error) {
-    const errLine = `[${new Date().toISOString()}] Error sending email to ${recipient} subject="${subject}" error=${error && (error.message || error)}\n`;
-    try { fs.appendFileSync(path.join(__dirname, '..', 'logs', 'email.log'), errLine); } catch (e) { }
-    console.error('❌ Email send error:', error.message);
+    console.error(`❌ Email send error to ${recipient}:`, error.message);
+    
+    const errLine = `[${new Date().toISOString()}] Error sending email to ${recipient} subject="${subject}" error=${error.message}\n`;
+    try { 
+      const logsDir = path.join(__dirname, '../logs');
+      if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+      fs.appendFileSync(path.join(logsDir, 'email.log'), errLine); 
+    } catch (e) { }
+    
     return false;
   }
 }

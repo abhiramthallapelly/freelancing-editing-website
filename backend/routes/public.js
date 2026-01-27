@@ -443,15 +443,22 @@ router.post('/contact', validateContact, async (req, res) => {
           </html>
         `;
         
-        await sendEmail(
+        const emailSent = await sendEmail(
           process.env.EMAIL_USER,
           `New Contact Form Submission: ${subject || 'No Subject'}`,
           htmlMessage
         );
-        console.log('Contact email sent successfully');
+        
+        if (emailSent) {
+          console.log('✅ Contact email sent successfully');
+        } else {
+          console.error('❌ Failed to send contact email notification');
+        }
       } catch (emailErr) {
-        console.error('Email send error:', emailErr);
+        console.error('❌ Email notification block error:', emailErr.message);
       }
+    } else {
+      console.warn('⚠️ Email credentials missing, skipping notification');
     }
     
     console.log('New Contact Form Submission:', {
