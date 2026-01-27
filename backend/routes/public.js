@@ -367,7 +367,6 @@ router.post('/contact', validateContact, async (req, res) => {
       });
     }
     
-    // Store contact message in MongoDB
     try {
       const contact = await Contact.create({
         name: name.trim(),
@@ -377,8 +376,8 @@ router.post('/contact', validateContact, async (req, res) => {
       });
       console.log('Contact saved to database with ID:', contact.id);
     } catch (dbErr) {
-      console.error('Database error:', dbErr);
-      // Continue even if database fails
+      console.error('❌ Database error during contact save:', dbErr.message);
+      // We continue to send the email even if DB fails
     }
     
     // Send email notification (if configured)
@@ -464,7 +463,7 @@ router.post('/contact', validateContact, async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
-    res.json({ 
+    res.status(200).json({ 
       message: 'Thank you for your message! We\'ll get back to you within 24 hours.',
       success: true
     });

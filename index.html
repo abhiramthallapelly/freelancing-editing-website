@@ -967,7 +967,8 @@
         result = await response.json();
       } else {
         const text = await response.text();
-        throw new Error(text || 'Server returned an invalid response');
+        console.error('Non-JSON response:', text);
+        throw new Error(`Server error: ${response.status}. Please check console for details.`);
       }
 
       if (!response.ok) {
@@ -1159,7 +1160,8 @@
         result = await response.json();
       } else {
         const text = await response.text();
-        throw new Error(text || 'Server returned an invalid response');
+        console.error('Non-JSON response:', text);
+        throw new Error(`Server error: ${response.status}. Please check console for details.`);
       }
 
       if (!response.ok) {
