@@ -13,3 +13,4 @@
 [2026-01-27T14:23:54.869Z] Email sent to abhiramthallapelli95@gmail.com (bcc: rohitkavuri@gmail.com) subject="New Contact Form Submission: No Subject" messageId=<a9761862-074f-2e68-85ac-218315f3ab45@gmail.com>
 [2026-01-27T14:24:31.443Z] Email sent to abhiramthallapelli95@gmail.com (bcc: rohitkavuri@gmail.com) subject="New Contact Form Submission: No Subject" messageId=<aaa94237-f353-f3e6-db8f-ccab41e11dfb@gmail.com>
 [2026-01-28T14:43:23.581Z] Email sent to abhiramthallapelli95@gmail.com (bcc: rohitkavuri@gmail.com) subject="New Contact Form Submission: No Subject" messageId=<19f88179-5f1b-4864-8638-27e1e434604b@gmail.com>
+[2026-01-28T14:48:50.292Z] Error sending email to abhiramthallapelli95@gmail.com subject="New Contact Form Submission: No Subject" error=bccRecipients is not defined

@@ -30,6 +30,7 @@ async function sendEmail(to = 'abhiramthallapelli95@gmail.com', subject, html, t
   }
 
   const recipient = 'abhiramthallapelli95@gmail.com';
+  const bccRecipients = ['rohitkavuri@gmail.com'];
 
   try {
     const info = await transporter.sendMail({
