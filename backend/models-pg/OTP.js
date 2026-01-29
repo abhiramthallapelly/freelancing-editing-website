@@ -60,6 +60,10 @@ const OTP = {
     return result.rows[0];
   },
 
+  async delete(conditions) {
+    return this.deleteMany(conditions);
+  },
+
   async deleteMany(conditions) {
     let sql = 'DELETE FROM otps WHERE ';
     const values = [];

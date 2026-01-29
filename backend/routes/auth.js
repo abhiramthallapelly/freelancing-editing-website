@@ -440,19 +440,19 @@ router.post('/send-otp', async (req, res) => {
     const validTypes = ['signup', 'login', 'password_reset'];
     const otpType = validTypes.includes(type) ? type : 'signup';
     
-    const recentOTPs = await OTP.countDocuments({
+    const recentOTPsCount = await OTP.countDocuments({
       email: email.toLowerCase(),
       created_at: { $gte: new Date(Date.now() - 10 * 60 * 1000) }
     });
     
-    if (recentOTPs >= 3) {
+    if (recentOTPsCount >= 3) {
       return res.status(429).json({ message: 'Too many OTP requests. Please wait 10 minutes before trying again.' });
     }
     
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     
-    await OTP.deleteMany({ email: email.toLowerCase(), type: otpType });
+    await OTP.delete({ email: email.toLowerCase(), type: otpType });
     
     await OTP.create({
       email: email.toLowerCase(),
@@ -501,7 +501,7 @@ router.post('/verify-otp', async (req, res) => {
     }
     
     if (otpRecord.otp !== otp) {
-      otpRecord.attempts += 1;
+      otpRecord.attempts = (otpRecord.attempts || 0) + 1;
       await OTP.save(otpRecord);
       return res.status(400).json({ message: 'Invalid verification code' });
     }
@@ -609,7 +609,7 @@ router.post('/login-with-otp', async (req, res) => {
     }
 
     if (otpRecord.otp !== otp) {
-      otpRecord.attempts += 1;
+      otpRecord.attempts = (otpRecord.attempts || 0) + 1;
       await OTP.save(otpRecord);
       return res.status(400).json({ message: 'Invalid verification code' });
     }
