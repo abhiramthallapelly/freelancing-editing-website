@@ -565,10 +565,7 @@ router.post('/review', validateReview, async (req, res) => {
 router.get('/reviews', async (req, res) => {
   try {
     // Fetch reviews, ordered by newest first, limit to 200
-    const reviews = await Review.find({
-      order: [['created_at', 'DESC']],
-      limit: 200
-    });
+    const reviews = await Review.find();
 
     // Format reviews
     const formattedReviews = reviews.map(row => ({
