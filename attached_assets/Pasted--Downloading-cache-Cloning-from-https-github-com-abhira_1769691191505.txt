@@ -1,0 +1,194 @@
+==> Downloading cache...
+==> Cloning from https://github.com/abhiramthallapelly/videotemplatestore
+==> Checking out commit a2d8dee38fed5a4a5466969bf46551fb7dfab859 in branch main
+==> Downloaded 156MB in 5s. Extraction took 9s.
+==> Requesting Node.js version 20.x
+==> Using Node.js version 20.20.0 via /opt/render/project/src/package.json
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm run build'...
+Menu
+> video-editing-store@1.0.0 build
+> node build.js
+🔨 Starting build process...
+📦 Ensuring root dependencies are installed...
+> video-editing-store@1.0.0 postinstall
+> echo 'Cleanup complete'
+Cleanup complete
+up to date, audited 435 packages in 1s
+52 packages are looking for funding
+  run `npm fund` for details
+6 vulnerabilities (1 moderate, 5 high)
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+✅ Dependencies installed successfully
+✅ Build completed successfully
+==> Uploading build...
+==> Uploaded in 6.0s. Compression took 6.1s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm start'
+> video-editing-store@1.0.0 start
+> node ./backend/server.js
+🏁 Server process starting...
+✅ Dotenv loaded
+Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable Google Sign-In.
+🚀 Server LIVE on port 10000
+127.0.0.1 - - [29/Jan/2026:12:51:10 +0000] "HEAD / HTTP/1.1" 200 33260 "-" "Go-http-client/1.1"
+✅ PostgreSQL connected
+✅ PostgreSQL connection verified
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://freelancing-editing-website-1.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+10.20.69.67 - - [29/Jan/2026:12:51:22 +0000] "GET / HTTP/1.1" 200 - "-" "Go-http-client/2.0"
+10.17.222.2 - - [29/Jan/2026:12:51:31 +0000] "GET / HTTP/1.1" 200 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.20.69.67 - - [29/Jan/2026:12:51:31 +0000] "GET /x%20logo.webp HTTP/1.1" 200 7464 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.17.222.2 - - [29/Jan/2026:12:51:31 +0000] "GET /youtubelogo.webp HTTP/1.1" 200 7476 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.18.101.194 - - [29/Jan/2026:12:51:31 +0000] "GET /instaimg.webp HTTP/1.1" 200 7310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.21.45.130 - - [29/Jan/2026:12:51:33 +0000] "GET /store.html HTTP/1.1" 200 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+Query error: relation "reviews" does not exist
+Get reviews error: error: relation "reviews" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async query (/opt/render/project/src/backend/config/postgres.js:22:17)
+    at async Object.find (/opt/render/project/src/backend/models-pg/Review.js:18:20)
+    at async /opt/render/project/src/backend/routes/public.js:568:21 {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+10.18.101.194 - - [29/Jan/2026:12:51:34 +0000] "GET /api/public/reviews HTTP/1.1" 200 2 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.21.45.130 - - [29/Jan/2026:12:51:34 +0000] "GET /api/auth/status HTTP/1.1" 200 53 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+✅ PostgreSQL connected
+Query error: relation "categories" does not exist
+Categories error: error: relation "categories" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async query (/opt/render/project/src/backend/config/postgres.js:22:17)
+    at async Object.find (/opt/render/project/src/backend/models-pg/Category.js:5:20)
+    at async /opt/render/project/src/backend/routes/store.js:84:24 {
+  length: 109,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+10.20.69.67 - - [29/Jan/2026:12:51:34 +0000] "GET /api/store/categories HTTP/1.1" 200 223 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+✅ PostgreSQL connected
+Query error: relation "projects" does not exist
+Store items error: error: relation "projects" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async query (/opt/render/project/src/backend/config/postgres.js:22:17)
+    at async /opt/render/project/src/backend/routes/store.js:60:20 {
+  length: 107,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+10.21.45.130 - - [29/Jan/2026:12:51:34 +0000] "GET /api/store/items HTTP/1.1" 200 2 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+✅ PostgreSQL connected
+Query error: relation "users" does not exist
+Login error: error: relation "users" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async query (/opt/render/project/src/backend/config/postgres.js:22:17)
+    at async Object.findOne (/opt/render/project/src/backend/models-pg/User.js:27:20)
+    at async /opt/render/project/src/backend/routes/auth.js:137:18 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+10.21.45.130 - - [29/Jan/2026:12:51:46 +0000] "POST /api/auth/login HTTP/1.1" 500 42 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+✅ PostgreSQL connected
+Query error: relation "users" does not exist
+Login error: error: relation "users" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async query (/opt/render/project/src/backend/config/postgres.js:22:17)
+    at async Object.findOne (/opt/render/project/src/backend/models-pg/User.js:27:20)
+    at async /opt/render/project/src/backend/routes/auth.js:137:18 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+10.20.69.67 - - [29/Jan/2026:12:51:49 +0000] "POST /api/auth/login HTTP/1.1" 500 42 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.17.222.2 - - [29/Jan/2026:12:51:54 +0000] "GET /index.html HTTP/1.1" 200 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.20.69.67 - - [29/Jan/2026:12:51:55 +0000] "GET /x%20logo.webp HTTP/1.1" 200 7464 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.21.45.130 - - [29/Jan/2026:12:51:55 +0000] "GET /instaimg.webp HTTP/1.1" 200 7310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+10.20.69.67 - - [29/Jan/2026:12:51:55 +0000] "GET /youtubelogo.webp HTTP/1.1" 200 7476 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+✅ PostgreSQL connected
+Contact saved to database with ID: 4
+10.17.222.2 - - [29/Jan/2026:12:52:39 +0000] "POST /api/public/contact HTTP/1.1" - - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"

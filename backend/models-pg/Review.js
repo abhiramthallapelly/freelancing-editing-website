@@ -14,7 +14,7 @@ const Review = {
       sql += ' WHERE ' + clauses.join(' AND ');
     }
     
-    sql += ' ORDER BY created_at DESC LIMIT 200';
+    sql += ' ORDER BY created_at DESC';
     const result = await query(sql, values);
     return result.rows.map(row => ({
       ...row,
